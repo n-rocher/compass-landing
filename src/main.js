@@ -10,9 +10,11 @@
 
     function isElementVerticallyInViewport(el) {
         const rect = el.getBoundingClientRect();
+        const paddingTop = 50;
+        const paddingBottom = 50;
         return (
-            rect.top >= 0 &&
-            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
+            rect.top >= paddingTop &&
+            rect.bottom <= (window.innerHeight - paddingBottom) || (document.documentElement.clientHeight - paddingBottom)
         );
     }
 
