@@ -1,12 +1,99 @@
 (function loadscene() {
 
-    var canvas, canvas2, gl, vp_size, prog, bufObj = {}, mousepos = [0, 0];
-    let gl2
-    let duplicateCanvas
+    var form
+
+    var canvas, canvas2, gl, gl2, vp_size, prog, bufObj = {}, mousepos = [0, 0];
+    let duplicateCanvas = false
+
+    let seed = Math.random() * 50
+    let firstRound = false
+
+    function isElementVerticallyInViewport(el) {
+        const rect = el.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
+        );
+    }
+
+    function calculateMeanBrightness() {
+        const width = canvas.width;
+        const height = canvas.height;
+        const pixels = new Uint8Array(width * height * 4); // 4 bytes per pixel (RGBA)
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+        let totalBrightness = 0;
+        const numPixels = width * height;
+
+        for (let i = 0; i < pixels.length; i += 4) {
+            const brightness = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+            totalBrightness += brightness;
+        }
+
+        return totalBrightness / numPixels;
+    }
+
+    function calculateLuminance(rgb) {
+        let a = rgb.map(v => v / 255).map(v => {
+            return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+        return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+    }
+
+    function adjustCanvasBrightness() {
+        firstRound = true
+
+        // let meanBrightness = calculateMeanBrightness();
+        // let canvasLuminance = calculateLuminance([meanBrightness, meanBrightness, meanBrightness]);
+
+        // if (canvasLuminance > 0.3) {
+        //     canvas.className = "contrast"
+        //     canvas2.className = ""
+        // } else {
+        //     canvas.className = ""
+        //     canvas2.className = ""
+        // }
+
+        const imageData = gl2.getImageData(100, 100, 150, 150);
+        const data = imageData.data;
+        const colorCounts = {};
+        const threshold = 128; 
+    
+        for (let i = 0; i < data.length; i += 100) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+    
+            // Calculate contrast with white (255, 255, 255)
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+            if (luminance < threshold) {
+                const color = `rgb(${r},${g},${b})`;
+                if (!colorCounts[color]) {
+                    colorCounts[color] = 0;
+                }
+                colorCounts[color]++;
+            }
+        }
+
+        delete colorCounts["rgb(0,0,0)"]
+
+        let dominantColor = '';
+        let maxCount = 0;
+    
+        for (const color in colorCounts) {
+            if (colorCounts[color] > maxCount) {
+                maxCount = colorCounts[color];
+                dominantColor = color;
+            }
+        }
+        form.style.setProperty('--bg-color', (dominantColor || "#000"))
+    }
+
     function initScene() {
 
         canvas = document.getElementById("canvas");
         canvas2 = document.getElementById("canvas2");
+        form = document.getElementById("NewsletterForm")
         gl = canvas.getContext("webgl");
         gl2 = canvas2.getContext('2d');
         if (!gl)
@@ -56,9 +143,7 @@
     }
 
     function resize() {
-        //vp_size = [gl.drawingBufferWidth, gl.drawingBufferHeight];
         vp_size = [window.innerWidth, window.innerHeight];
-        //vp_size = [256, 256]
         canvas.width = vp_size[0];
         canvas.height = vp_size[1];
     }
@@ -68,26 +153,26 @@
         gl.viewport(0, 0, canvas.width, canvas.height);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        gl.uniform1f(progDraw.iTime, deltaMS / 1000.0);
+        gl.uniform1f(progDraw.iTime, (3000 + (seed) + deltaMS / 2500.0));
         gl.uniform2f(progDraw.iResolution, canvas.width, canvas.height);
         gl.uniform2f(progDraw.iMouse, mousepos[0], mousepos[1]);
         gl.drawElements(gl.TRIANGLES, bufObj.inx.len, gl.UNSIGNED_SHORT, 0);
 
-        if (!duplicateCanvas) {
+        if (duplicateCanvas) {
             gl2.drawImage(canvas, 0, 0);
         }
+
+        if (deltaMS % 1000.0 <= 15 || !firstRound) adjustCanvasBrightness()
 
         requestAnimationFrame(render);
     }
 
     initScene();
 
-    const header = document.getElementsByTagName("header")[0]
+    const footer = document.getElementsByTagName("footer")[0]
 
     document.addEventListener("scroll", e => {
-        const dim = canvas.getBoundingClientRect()
-        duplicateCanvas = dim.height + dim.top - 75 > 0
-        header.setAttribute("canvas-visible", duplicateCanvas)
+        duplicateCanvas = isElementVerticallyInViewport(footer)
     })
 
 })();
