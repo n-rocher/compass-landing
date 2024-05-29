@@ -180,7 +180,7 @@ header .over img#Screenshot {
   height: auto;
   max-height: 40vh;
   backdrop-filter: blur(8px);
-  filter: brightness(120%) contrast(120%) drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+  filter: brightness(130%) contrast(110%) drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
   transition: transform .2s;
   user-select: none;
   border-radius: 10px;

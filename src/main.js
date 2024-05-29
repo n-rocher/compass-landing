@@ -153,7 +153,7 @@
         gl.viewport(0, 0, canvas.width, canvas.height);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        gl.uniform1f(progDraw.iTime, (3000 + (seed) + deltaMS / 2500.0));
+        gl.uniform1f(progDraw.iTime, (3000 + (seed) + deltaMS / 5000.0));
         gl.uniform2f(progDraw.iResolution, canvas.width, canvas.height);
         gl.uniform2f(progDraw.iMouse, mousepos[0], mousepos[1]);
         gl.drawElements(gl.TRIANGLES, bufObj.inx.len, gl.UNSIGNED_SHORT, 0);
